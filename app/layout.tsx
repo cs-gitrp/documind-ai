@@ -15,21 +15,9 @@ export const metadata: Metadata = {
   description: 'AI-powered document analysis and question answering',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    // Adding ?v=1 forces browsers to clear their cached icon memory instantly
+    icon: '/icon-light-32x32.png?v=1',
+    apple: '/apple-icon.png?v=1',
   },
 }
 

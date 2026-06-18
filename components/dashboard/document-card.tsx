@@ -12,6 +12,9 @@ import {
 import { Badge } from '@/components/shared/badge'
 import type { Document } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
+import { getDownloadUrl, renameDocument } from '@/lib/api' // Restored all required API bindings
+import { useState } from 'react'
+import { DocumentMetadataDialog } from './document-metadata-dialog'
 
 interface DocumentCardProps {
   document: Document
@@ -20,19 +23,31 @@ interface DocumentCardProps {
 }
 
 export function DocumentCard({ document, className, onDelete }: DocumentCardProps) {
+  const [showMetadata, setShowMetadata] = useState(false)
+
   const statusConfig = {
     indexed: { variant: 'indexed' as const, label: 'Indexed' },
     processing: { variant: 'processing' as const, label: 'Processing' },
     error: { variant: 'error' as const, label: 'Error' },
+    failed: { variant: 'error' as const, label: 'Failed' },
   }
 
-  const config = statusConfig[document.status]
+  const config = statusConfig[document.status] || {
+    variant: 'error' as const,
+    label: document.status ? document.status.charAt(0).toUpperCase() + document.status.slice(1) : 'Unknown'
+  }
 
-  const formatDate = (date: Date) => {
-    const d = new Date(date)
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
+  const formatDate = (date: any) => {
+    if (!date) return ''
+    let dateStr = typeof date === 'string' ? date : date.toISOString()
+    if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+      dateStr += 'Z'
+    }
+    const d = new Date(dateStr)
+    const validDate = isNaN(d.getTime()) ? new Date() : d
+    const y = validDate.getFullYear()
+    const m = String(validDate.getMonth() + 1).padStart(2, '0')
+    const day = String(validDate.getDate()).padStart(2, '0')
     return `${y}-${m}-${day}`
   }
 
@@ -60,23 +75,46 @@ export function DocumentCard({ document, className, onDelete }: DocumentCardProp
             <MoreHorizontal className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem className="cursor-pointer">
+
+            {/* 1. Open Document */}
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => window.open(`${getDownloadUrl(document.id)}?inline=true`, '_blank')}
+            >
               <FileUp className="h-4 w-4 mr-2" />
               <span>Open Document</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
+
+            {/* 2. Rename Document */}
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={async () => { const newName = prompt('Enter new filename', document.filename); if (newName) { await renameDocument(document.id, newName); window.location.reload(); } }}
+            >
               <PencilIcon className="h-4 w-4 mr-2" />
               <span>Rename</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
+
+            {/* 3. Download Original */}
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => window.open(getDownloadUrl(document.id), '_blank')}
+            >
               <Download className="h-4 w-4 mr-2" />
               <span>Download Original</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
+
+            {/* 4. View Metadata */}
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => setShowMetadata(true)}
+            >
               <Eye className="h-4 w-4 mr-2" />
               <span>View Metadata</span>
             </DropdownMenuItem>
+
             <DropdownMenuSeparator />
+
+            {/* 5. Delete Document */}
             <DropdownMenuItem
               className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
               onClick={onDelete}
@@ -112,6 +150,13 @@ export function DocumentCard({ document, className, onDelete }: DocumentCardProp
       {document.preview && (
         <p className="line-clamp-2 text-xs text-muted-foreground">{document.preview}</p>
       )}
+
+      {/* Metadata Dialog popup anchor */}
+      <DocumentMetadataDialog
+        open={showMetadata}
+        onOpenChange={setShowMetadata}
+        document={document}
+      />
     </div>
   )
 }
