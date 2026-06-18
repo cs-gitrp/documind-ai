@@ -13,6 +13,25 @@ interface ChatMessageProps {
 export function ChatMessageComponent({ message, showSources, onSourceClick }: ChatMessageProps) {
   const isUser = message.role === 'user'
 
+  const formatMessageTime = (timestamp: any) => {
+    if (!timestamp) return ''
+    
+    // Ensure string dates from python are interpreted cleanly as UTC
+    let dateStr = typeof timestamp === 'string' ? timestamp : timestamp.toISOString()
+    if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+      dateStr += 'Z'
+    }
+    
+    const d = new Date(dateStr)
+    const validDate = isNaN(d.getTime()) ? new Date() : d
+
+    return validDate.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    })
+  }
+
   return (
     <div className={cn('flex gap-3', isUser && 'flex-row-reverse')}>
       {/* Avatar */}
@@ -37,7 +56,7 @@ export function ChatMessageComponent({ message, showSources, onSourceClick }: Ch
               : 'bg-muted text-muted-foreground border border-border dark:bg-slate-800 dark:text-slate-100'
           )}
         >
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap text-left">{message.content}</p>
         </div>
 
         {/* Sources */}
@@ -53,8 +72,8 @@ export function ChatMessageComponent({ message, showSources, onSourceClick }: Ch
         )}
 
         {/* Timestamp */}
-        <p className="text-xs text-muted-foreground">
-          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        <p className="text-[11px] text-muted-foreground tracking-tight select-none">
+          {formatMessageTime(message.timestamp)}
         </p>
       </div>
     </div>

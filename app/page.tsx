@@ -1,23 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Search, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DocumentUploadZone } from '@/components/dashboard/upload-zone'
 import { DocumentGrid } from '@/components/dashboard/document-grid'
 import { EmptyState } from '@/components/shared/empty-state'
-import { mockDocuments } from '@/lib/mock-data'
+import { getDocuments, deleteDocument } from '@/lib/api'
 import { FileText, Upload } from 'lucide-react'
-import type { Document } from '@/lib/mock-data'
 
 export default function DashboardPage() {
-  const [documents, setDocuments] = useState(mockDocuments)
+  const [documents, setDocuments] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'indexed' | 'processing' | 'error'>(
     'all'
   )
-  const [newDocumentId, setNewDocumentId] = useState<string | null>(null)
+  const [newDocumentId, setNewDocumentId] = useState<string | undefined>(undefined)
 
   const filteredDocuments = documents.filter((doc) => {
     const matchesSearch = doc.filename.toLowerCase().includes(searchTerm.toLowerCase())
@@ -25,29 +24,40 @@ export default function DashboardPage() {
     return matchesSearch && matchesStatus
   })
 
-  const handleDeleteDocument = (id: string) => {
-    setDocuments(documents.filter((doc) => doc.id !== id))
+  const fetchDocuments = async () => {
+    const docs = await getDocuments()
+    const mapped = Array.isArray(docs)
+      ? docs.map((doc: any) => ({
+          id: doc.id,
+          filename: doc.filename,
+          file_type: doc.file_type,
+          size: doc.file_size ? (doc.file_size / 1024 / 1024).toFixed(1) + ' MB' : 'N/A',
+          status: doc.status,
+          uploadDate: new Date(doc.upload_date),
+          pages: doc.page_count ?? 0,
+          chunks: doc.chunk_count ?? 0,
+          preview: doc.summary ?? '',
+        }))
+      : []
+    setDocuments(mapped)
   }
 
-  const handleUpload = (file: File, generatedDoc: Document) => {
-    // Add new document at the top of the list
-    const newDocs = [generatedDoc, ...documents]
-    setDocuments(newDocs)
+  useEffect(() => {
+    fetchDocuments()
+  }, [])
+
+  const handleDeleteDocument = async (id: string) => {
+    await deleteDocument(id)
+    await fetchDocuments()
+  }
+
+  const handleUpload = async (file: File, generatedDoc: any) => {
     setNewDocumentId(generatedDoc.id)
 
-    // Clear the "new" indicator after animation
-    setTimeout(() => {
-      setNewDocumentId(null)
-
-      // Simulate automatic transition from processing to indexed
-      setTimeout(() => {
-        setDocuments((prev) =>
-          prev.map((doc) =>
-            doc.id === generatedDoc.id ? { ...doc, status: 'indexed' as const } : doc
-          )
-        )
-      }, 1500)
-    }, 300)
+    setTimeout(async () => {
+      setNewDocumentId(undefined)
+      await fetchDocuments()
+    }, 3000)
   }
 
   const stats = {
@@ -56,7 +66,7 @@ export default function DashboardPage() {
     processing: documents.filter((d) => d.status === 'processing').length,
     totalSize: documents.reduce((sum, d) => {
       const mb = parseFloat(d.size)
-      return sum + mb
+      return sum + (isNaN(mb) ? 0 : mb)
     }, 0),
   }
 

@@ -20,10 +20,7 @@ export function ChatMessages({ messages, isLoading, onSourceClick }: ChatMessage
   }, [messages])
 
   return (
-    <div
-      ref={scrollRef}
-      className="flex-1 space-y-4 overflow-y-auto px-4 py-6 md:px-6"
-    >
+    <div ref={scrollRef} className="h-full min-h-0 space-y-4 overflow-y-auto px-4 py-6 md:px-6">
       {messages.length === 0 ? (
         <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
           <div className="rounded-full bg-primary/10 p-3">
@@ -46,7 +43,7 @@ export function ChatMessages({ messages, isLoading, onSourceClick }: ChatMessage
           ))}
           {isLoading && (
             <div className="flex gap-3">
-              <div className="h-8 w-8 rounded-full flex-shrink-0 bg-gradient-to-br from-emerald-400 to-emerald-600" />
+              <div className="h-8 w-8 shrink-0 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-full" />
               <div className="flex-1 space-y-1 rounded-lg bg-muted px-4 py-3">
                 <div className="flex gap-1">
                   <div className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '0ms' }} />

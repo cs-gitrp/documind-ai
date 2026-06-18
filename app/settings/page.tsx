@@ -1,15 +1,76 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { SettingsCard } from '@/components/settings/settings-card'
 import { ThemeSelector } from '@/components/settings/theme-selector'
+import { getSettings, updateSettings, clearStorage, getStorageStats } from '@/lib/api'
 
 export default function SettingsPage() {
   const [temperature, setTemperature] = useState(0.7)
   const [chunkSize, setChunkSize] = useState(1024)
   const [chunkOverlap, setChunkOverlap] = useState(128)
   const [responseMode, setResponseMode] = useState('detailed')
+  const [saving, setSaving] = useState(false)
+  const [clearing, setClearing] = useState(false)
+  const [storageStats, setStorageStats] = useState({ 
+    documents_mb: 0, index_mb: 0, total_mb: 0, max_mb: 100 
+  })
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const [data, storage] = await Promise.all([getSettings(), getStorageStats()])
+        if (data) {
+          if (data.temperature !== undefined) setTemperature(data.temperature)
+          if (data.chunk_size !== undefined) setChunkSize(data.chunk_size)
+          if (data.chunk_overlap !== undefined) setChunkOverlap(data.chunk_overlap)
+          if (data.response_mode) setResponseMode(data.response_mode)
+        }
+        if (storage) setStorageStats(storage)
+      } catch (e) {
+        console.error('Failed to load settings', e)
+      }
+    }
+
+    loadSettings()
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await updateSettings({
+        temperature,
+        chunk_size: chunkSize,
+        chunk_overlap: chunkOverlap,
+        response_mode: responseMode,
+      })
+      alert('Settings saved successfully!')
+    } catch (e) {
+      alert('Failed to save settings. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleClearStorage = async () => {
+    const confirmed = window.confirm(
+      'This will permanently delete ALL uploaded documents, ' +
+      'their indexes, and chat history. This cannot be undone. ' +
+      'Continue?'
+    )
+    if (!confirmed) return
+
+    setClearing(true)
+    try {
+      await clearStorage()
+      alert('All storage cleared successfully!')
+    } catch (e) {
+      alert('Failed to clear storage. Please try again.')
+    } finally {
+      setClearing(false)
+    }
+  }
 
   return (
     <div className="space-y-8 px-4 py-8 md:px-6 lg:px-8 max-w-3xl mx-auto">
@@ -111,45 +172,47 @@ export default function SettingsPage() {
               Choose how detailed the AI responses should be.
             </p>
           </div>
+
+          <Button onClick={handleSave} disabled={saving} className="w-full mt-2">
+            {saving ? 'Saving...' : 'Save Settings'}
+          </Button>
         </div>
       </SettingsCard>
 
       {/* Storage & Cache */}
       <SettingsCard
-        title="Storage & Cache Management"
-        description="Manage your document storage and cache settings"
+        title="Storage Management"
+        description="Manage your document storage settings"
       >
         <div className="space-y-4">
           <div className="rounded-lg bg-muted p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-foreground">Total Storage Used</span>
-              <span className="font-semibold text-foreground">27.9 MB / 100 MB</span>
+              <span className="font-semibold text-foreground">{storageStats.total_mb} MB / {storageStats.max_mb} MB</span>
             </div>
             <div className="w-full bg-border rounded-full h-2 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-full" style={{ width: '27.9%' }} />
+              <div className="bg-linear-to-r from-blue-500 to-blue-600 h-full" style={{ width: `${(storageStats.total_mb / storageStats.max_mb) * 100}%` }} />
             </div>
           </div>
 
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 text-sm">
+          <div className="grid gap-3 grid-cols-2 text-sm">
             <div className="rounded bg-background p-3">
               <p className="text-muted-foreground">Documents</p>
-              <p className="mt-1 font-semibold text-foreground">20.1 MB</p>
+              <p className="mt-1 font-semibold text-foreground">{storageStats.documents_mb} MB</p>
             </div>
             <div className="rounded bg-background p-3">
-              <p className="text-muted-foreground">Cache</p>
-              <p className="mt-1 font-semibold text-foreground">5.2 MB</p>
-            </div>
-            <div className="rounded bg-background p-3">
-              <p className="text-muted-foreground">Embeddings</p>
-              <p className="mt-1 font-semibold text-foreground">2.6 MB</p>
+              <p className="text-muted-foreground">Index Storage</p>
+              <p className="mt-1 font-semibold text-foreground">{storageStats.index_mb} MB</p>
             </div>
           </div>
 
           <Button
             variant="outline"
-            className="w-full"
+            className="w-full border-red-500/30 bg-red-500/10 text-red-700 hover:border-red-500/40 hover:bg-red-500/15 hover:text-red-800 focus-visible:border-red-500/40 focus-visible:ring-red-500/20 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/20 dark:hover:text-red-200"
+            disabled={clearing}
+            onClick={handleClearStorage}
           >
-            Clear Cache
+            {clearing ? 'Clearing...' : 'Clear All Storage'}
           </Button>
         </div>
       </SettingsCard>

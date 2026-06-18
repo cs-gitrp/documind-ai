@@ -5,6 +5,7 @@ import { Upload, Plus, CheckCircle2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
+import { uploadDocument } from '@/lib/api'
 
 type UploadState = 'idle' | 'uploading' | 'processing' | 'success'
 type ProcessingStep = 'extracting' | 'embeddings' | 'indexing'
@@ -19,6 +20,7 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [currentFile, setCurrentFile] = useState<File | null>(null)
   const [processingStep, setProcessingStep] = useState<ProcessingStep>('extracting')
+  const [lastUploadedDocId, setLastUploadedDocId] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const processingSteps: Record<ProcessingStep, string> = {
@@ -56,7 +58,7 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
     fileInputRef.current?.click()
   }
 
-  const simulateUpload = (file: File) => {
+  const simulateUpload = async (file: File) => {
     // Validate file type
     const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']
     if (!validTypes.includes(file.type)) {
@@ -79,12 +81,63 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
       })
     }, 100)
 
-    // After 1.5 seconds, transition to processing
-    setTimeout(() => {
+    // After 1.5 seconds, transition to processing and perform real upload
+    setTimeout(async () => {
       clearInterval(uploadInterval)
       setUploadProgress(100)
       setState('processing')
-      simulateProcessing()
+
+      const result = await uploadDocument(file)
+
+      let attempts = 0
+      let found = null
+
+      while (attempts < 60) {
+        const res = await fetch('http://127.0.0.1:8000/api/documents/')
+        const documents = await res.json()
+        found = Array.isArray(documents)
+          ? documents.find((doc: any) => doc?.id === result?.id)
+          : null
+
+        if (found && (found.status === 'indexed' || found.status === 'failed')) {
+          break
+        }
+
+        attempts++
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
+    
+      if (!found || found.status === 'failed') {
+        setState('idle')
+        setCurrentFile(null)
+        setUploadProgress(0)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        alert('Document processing failed. Please try again.')
+        return
+      }
+
+      const mappedDoc = {
+        id: found.id,
+        filename: found.filename,
+        file_type: found.file_type,
+        size: found.file_size ? (found.file_size / 1024 / 1024).toFixed(1) + ' MB' : 'N/A',
+        status: found.status,
+        uploadDate: new Date(found.upload_date),
+        pages: found.page_count ?? 0,
+        chunks: found.chunk_count ?? 0,
+        preview: found.summary ?? '',
+      }
+
+      setLastUploadedDocId(found.id)
+      setState('success')
+      onUpload?.(file, mappedDoc)
+
+      setTimeout(() => {
+        setState('idle')
+        setCurrentFile(null)
+        setUploadProgress(0)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+      }, 2000)
     }, 1500)
   }
 
@@ -130,26 +183,25 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
   }
 
   const handleChatWithDocument = () => {
-    // TODO: Navigate to chat with selected document
+    if (lastUploadedDocId) {
+      window.location.href = `/chat?docId=${lastUploadedDocId}`
+    }
     setState('idle')
-    setCurrentFile(null)
-    setUploadProgress(0)
   }
-
   return (
     <div
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        'group relative flex flex-col items-center justify-center gap-5 rounded-2xl border border-border/50 bg-gradient-to-br from-background to-card/50 px-8 py-16 shadow-sm transition-all hover:border-border hover:shadow-md hover:from-background hover:to-primary/5',
+        'group relative flex flex-col items-center justify-center gap-5 rounded-2xl border border-border/50 bg-linear-to-br from-background to-card/50 px-8 py-16 shadow-sm transition-all hover:border-border hover:shadow-md hover:from-background hover:to-primary/5',
         state !== 'idle' && 'hover:border-border/50 hover:shadow-sm hover:from-background hover:to-card/50',
         className
       )}
     >
       {state === 'idle' && (
         <>
-          <div className="rounded-full bg-gradient-to-br from-primary/15 to-primary/5 p-4 transition-all group-hover:from-primary/25 group-hover:to-primary/10 group-hover:shadow-lg group-hover:shadow-primary/10">
+          <div className="rounded-full bg-linear-to-br from-primary/15 to-primary/5 p-4 transition-all group-hover:from-primary/25 group-hover:to-primary/10 group-hover:shadow-lg group-hover:shadow-primary/10">
             <Upload className="h-7 w-7 text-primary" />
           </div>
 
@@ -175,7 +227,7 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
 
       {state === 'uploading' && currentFile && (
         <div className="w-full max-w-md space-y-4">
-          <div className="rounded-full bg-gradient-to-br from-primary/15 to-primary/5 p-4 transition-all">
+          <div className="rounded-full bg-linear-to-br from-primary/15 to-primary/5 p-4 transition-all">
             <Upload className="h-7 w-7 text-primary" />
           </div>
 

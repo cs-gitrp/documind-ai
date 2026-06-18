@@ -33,6 +33,7 @@ export interface ChatSession {
   lastMessage: string
   messageCount: number
   documentCount: number
+  documentName?: string
 }
 
 // Mock documents

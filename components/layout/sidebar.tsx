@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { getDocuments, getChatSessions, getStorageStats } from '@/lib/api'
 
 const navItems = [
   {
@@ -48,6 +49,27 @@ interface SidebarProps {
 
 export function Sidebar({ open = true, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const [stats, setStats] = useState({ documents: 0, conversations: 0, storageMb: 0 })
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [docs, sessions, storage] = await Promise.all([
+          getDocuments(),
+          getChatSessions(),
+          getStorageStats()
+        ])
+        setStats({
+          documents: Array.isArray(docs) ? docs.length : 0,
+          conversations: Array.isArray(sessions) ? sessions.length : 0,
+          storageMb: storage?.total_mb || 0
+        })
+      } catch (e) {
+        console.error('Failed to load sidebar stats', e)
+      }
+    }
+    loadStats()
+  }, [])
 
   return (
     <aside
@@ -108,15 +130,15 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
         <div className="mt-3 space-y-2 text-sm">
           <div className="flex items-center justify-between">
             <span className="text-sidebar-foreground/70">Documents</span>
-            <span className="font-semibold">5</span>
+            <span className="font-semibold">{stats.documents}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sidebar-foreground/70">Conversations</span>
-            <span className="font-semibold">12</span>
+            <span className="font-semibold">{stats.conversations}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sidebar-foreground/70">Storage Used</span>
-            <span className="font-semibold">27.9 MB</span>
+            <span className="font-semibold">{stats.storageMb} MB</span>
           </div>
         </div>
       </div>

@@ -23,7 +23,11 @@ export function HistoryCard({
     if (hours < 1) return 'Just now'
     if (hours < 24) return `${Math.floor(hours)}h ago`
     if (hours < 168) return `${Math.floor(hours / 24)}d ago`
-    return date.toLocaleDateString()
+    return new Date(date).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
   }
 
   return (
@@ -51,7 +55,7 @@ export function HistoryCard({
               </div>
               <div className="flex items-center gap-1">
                 <FileText className="h-3.5 w-3.5" />
-                {session.documentCount} document{session.documentCount > 1 ? 's' : ''}
+                <span className="max-w-40 truncate">{session.documentName || 'Unknown document'}</span>
               </div>
               <span>{formatDate(session.createdAt)}</span>
             </div>

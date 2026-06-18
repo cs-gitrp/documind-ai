@@ -28,6 +28,14 @@ export function DocumentCard({ document, className, onDelete }: DocumentCardProp
 
   const config = statusConfig[document.status]
 
+  const formatDate = (date: Date) => {
+    const d = new Date(date)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
   return (
     <div
       className={cn(
@@ -84,7 +92,7 @@ export function DocumentCard({ document, className, onDelete }: DocumentCardProp
       <div className="flex items-center justify-between">
         <Badge variant={config.variant}>{config.label}</Badge>
         <span className="text-xs text-muted-foreground">
-          {document.uploadDate.toLocaleDateString()}
+          {formatDate(document.uploadDate)}
         </span>
       </div>
 

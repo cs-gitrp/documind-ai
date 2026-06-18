@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { X, FileText, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Source } from '@/lib/mock-data'
@@ -11,6 +12,8 @@ interface SourceCitationsProps {
 }
 
 export function SourceCitations({ sources, onClose, open = true }: SourceCitationsProps) {
+  const [selectedSource, setSelectedSource] = useState<Source | null>(null)
+
   if (!open || sources.length === 0) {
     return null
   }
@@ -36,6 +39,7 @@ export function SourceCitations({ sources, onClose, open = true }: SourceCitatio
           {sources.map((source, idx) => (
             <div
               key={idx}
+              onClick={() => setSelectedSource(source)}
               className="flex gap-3 rounded-lg border border-border bg-background p-3 hover:border-primary transition-colors cursor-pointer"
             >
               <div className="flex-shrink-0">
@@ -63,6 +67,36 @@ export function SourceCitations({ sources, onClose, open = true }: SourceCitatio
           ))}
         </div>
       </div>
+
+      {/* Full text chunk inspection modal overlay */}
+      {selectedSource && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"       
+          onClick={() => setSelectedSource(null)}
+        >
+          <div 
+            className="max-w-lg w-full rounded-lg border border-border bg-card p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150"         
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold text-foreground truncate max-w-[85%]">{selectedSource.filename}</h4>
+              <button 
+                onClick={() => setSelectedSource(null)}
+                className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                aria-label="Close preview"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Page {selectedSource.page} • {(selectedSource.confidence * 100).toFixed(0)}% match
+            </p>
+            <div className="rounded-md bg-muted p-4 text-sm text-foreground leading-relaxed max-h-80 overflow-y-auto custom-scrollbar">
+              {selectedSource.preview}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

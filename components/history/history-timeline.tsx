@@ -19,7 +19,10 @@ export function HistoryTimeline({
   // Group sessions by date
   const groupedSessions = sessions.reduce(
     (acc, session) => {
-      const date = session.createdAt.toLocaleDateString()
+      const d = new Date(session.createdAt)
+      const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+        d.getDate()
+      ).padStart(2, '0')}`
       if (!acc[date]) {
         acc[date] = []
       }
@@ -52,7 +55,7 @@ export function HistoryTimeline({
                 session={session}
                 onOpen={() => onOpen?.(session)}
                 onDelete={() => onDelete?.(session.id)}
-                onFavorite={() => onFavorite?.(session.id)}
+            
               />
             ))}
           </div>
