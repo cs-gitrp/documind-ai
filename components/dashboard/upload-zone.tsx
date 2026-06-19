@@ -5,7 +5,7 @@ import { Upload, Plus, CheckCircle2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
-import { uploadDocument } from '@/lib/api'
+import { uploadDocument, getDocuments } from '@/lib/api' // Cleaned up API bindings
 
 type UploadState = 'idle' | 'uploading' | 'processing' | 'success'
 type ProcessingStep = 'extracting' | 'embeddings' | 'indexing'
@@ -93,8 +93,8 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
       let found = null
 
       while (attempts < 60) {
-        const res = await fetch('http://127.0.0.1:8000/api/documents/')
-        const documents = await res.json()
+        // Polling utilizing modular environment variables bound to getDocuments
+        const documents = await getDocuments()
         found = Array.isArray(documents)
           ? documents.find((doc: any) => doc?.id === result?.id)
           : null
@@ -141,60 +141,20 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
     }, 1500)
   }
 
-  const simulateProcessing = () => {
-    const steps: ProcessingStep[] = ['extracting', 'embeddings', 'indexing']
-    let stepIndex = 0
-
-    const nextStep = () => {
-      if (stepIndex < steps.length) {
-        setProcessingStep(steps[stepIndex])
-        stepIndex++
-        setTimeout(nextStep, 650)
-      } else {
-        // Processing complete, show success
-        setState('success')
-
-        // Generate mock document
-        if (currentFile) {
-          const mockDoc = {
-            id: Math.random().toString(36).substring(7),
-            filename: currentFile.name,
-            uploadDate: new Date(),
-            pages: Math.floor(Math.random() * 200) + 20,
-            chunks: Math.floor(Math.random() * 1500) + 100,
-            size: `${(Math.random() * 20 + 1).toFixed(1)} MB`,
-            status: 'indexed',
-            preview: `Successfully processed ${currentFile.name}`,
-          }
-          onUpload?.(currentFile, mockDoc)
-        }
-
-        // Reset after 2 seconds
-        setTimeout(() => {
-          setState('idle')
-          setCurrentFile(null)
-          setUploadProgress(0)
-          if (fileInputRef.current) fileInputRef.current.value = ''
-        }, 2000)
-      }
-    }
-
-    nextStep()
-  }
-
   const handleChatWithDocument = () => {
     if (lastUploadedDocId) {
       window.location.href = `/chat?docId=${lastUploadedDocId}`
     }
     setState('idle')
   }
+
   return (
     <div
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        'group relative flex flex-col items-center justify-center gap-5 rounded-2xl border border-border/50 bg-linear-to-br from-background to-card/50 px-8 py-16 shadow-sm transition-all hover:border-border hover:shadow-md hover:from-background hover:to-primary/5',
+        'group relative flex flex-col items-center justify-center gap-5 rounded-2xl border border-border/50 bg-linear-to-br from-background to-card/50 px-8 py-16 shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:from-background hover:to-primary/5',
         state !== 'idle' && 'hover:border-border/50 hover:shadow-sm hover:from-background hover:to-card/50',
         className
       )}
@@ -227,8 +187,10 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
 
       {state === 'uploading' && currentFile && (
         <div className="w-full max-w-md space-y-4">
-          <div className="rounded-full bg-linear-to-br from-primary/15 to-primary/5 p-4 transition-all">
-            <Upload className="h-7 w-7 text-primary" />
+          <div className="flex justify-center">
+            <div className="rounded-full bg-linear-to-br from-primary/15 to-primary/5 p-4 animate-pulse">
+              <Upload className="h-7 w-7 text-primary" />
+            </div>
           </div>
 
           <div className="text-center space-y-2">
