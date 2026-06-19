@@ -29,10 +29,10 @@ export default function ChatContent() {
         const docs = await getDocuments()
         const mapped = Array.isArray(docs)
           ? docs.map((doc: any) => ({
-              id: doc.id,
-              filename: doc.filename,
-              status: doc.status,
-            }))
+            id: doc.id,
+            filename: doc.filename,
+            status: doc.status,
+          }))
           : []
         const indexedDocs = mapped.filter((doc: any) => doc.status === 'indexed')
         setDocuments(indexedDocs)
@@ -40,7 +40,7 @@ export default function ChatContent() {
         // 2. Resolve exactly which document ID to target
         const preDocId = searchParams.get('docId')
         const savedDocId = sessionStorage.getItem('documind_doc_id')
-        
+
         let targetDocId = ''
         if (preDocId && indexedDocs.find((d: any) => d.id === preDocId)) {
           targetDocId = preDocId
@@ -49,7 +49,7 @@ export default function ChatContent() {
         } else if (indexedDocs.length > 0) {
           targetDocId = indexedDocs[0].id
         }
-        
+
         if (targetDocId) {
           setSelectedDocumentId(targetDocId)
           sessionStorage.setItem('documind_doc_id', targetDocId)
@@ -63,7 +63,7 @@ export default function ChatContent() {
         if (targetSessionId) {
           setSessionId(targetSessionId)
           sessionStorage.setItem('documind_session_id', targetSessionId)
-          
+
           const sessionData = await getChatSession(targetSessionId)
           if (Array.isArray(sessionData)) {
             const restored = sessionData.map((m: any) => ({
@@ -71,18 +71,18 @@ export default function ChatContent() {
               role: m.role,
               content: m.content,
               timestamp: new Date(m.created_at),
-              sources: Array.isArray(m.sources) 
+              sources: Array.isArray(m.sources)
                 ? m.sources.map((s: any) => {
-                    const matchedDoc = indexedDocs.find(d => d.id === targetDocId)
-                    const scoreValue = typeof s.score === 'number' ? s.score : 0
-                    const confidence = Math.max(0, Math.min(1, 1 - scoreValue / 5))
-                    return {
-                      filename: matchedDoc?.filename || 'Document',
-                      page: s.page ?? s.chunk_id ?? 0,
-                      confidence: confidence,
-                      preview: s.text || '',
-                    }
-                  })
+                  const matchedDoc = indexedDocs.find(d => d.id === targetDocId)
+                  const scoreValue = typeof s.score === 'number' ? s.score : 0
+                  const confidence = Math.max(0, Math.min(1, 1 - scoreValue / 5))
+                  return {
+                    filename: matchedDoc?.filename || 'Document',
+                    page: s.page ?? s.chunk_id ?? 0,
+                    confidence: confidence,
+                    preview: s.text || '',
+                  }
+                })
                 : [],
             }))
             setMessages(restored)
@@ -115,7 +115,7 @@ export default function ChatContent() {
 
     try {
       const res = await sendMessage(content, selectedDocumentId, sessionId ?? undefined)
-      
+
       const reader = res.body?.getReader()
       const decoder = new TextDecoder()
       let fullText = ''
@@ -140,11 +140,11 @@ export default function ChatContent() {
           if (done) break
 
           const chunk = decoder.decode(value, { stream: true })
-          
+
           if (chunk.includes('__SESSION_ID__')) {
             const beforeMeta = chunk.split('\n__SESSION_ID__')[0]
             fullText += beforeMeta
-            
+
             const metaPart = chunk.split('__SESSION_ID__')[1]
             parsedSessionId = metaPart.split('__SOURCES__')[0]
             const sourcesPart = metaPart.split('__SOURCES__')[1]
@@ -272,11 +272,10 @@ export default function ChatContent() {
                   sessionStorage.removeItem('documind_session_id')
                   sessionStorage.removeItem('documind_doc_id')
                 }}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-200 ease-in-out ${
-                  selectedDocumentId === doc.id
-                    ? 'border-primary bg-primary text-primary-foreground scale-105 shadow-sm shadow-primary/20'
-                    : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-accent'
-                }`}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-200 ease-in-out ${selectedDocumentId === doc.id
+                  ? 'border-primary bg-primary text-primary-foreground scale-105 shadow-sm shadow-primary/20'
+                  : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-accent'
+                  }`}
               >
                 <FileText className="h-3 w-3 shrink-0" />
                 <span className="max-w-45 truncate">{doc.filename}</span>
