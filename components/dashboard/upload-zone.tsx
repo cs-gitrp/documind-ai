@@ -5,7 +5,7 @@ import { Upload, Plus, CheckCircle2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
-import { uploadDocument, getDocuments } from '@/lib/api' // Cleaned up API bindings
+import { uploadDocument, getDocuments } from '@/lib/api'
 
 type UploadState = 'idle' | 'uploading' | 'processing' | 'success'
 type ProcessingStep = 'extracting' | 'embeddings' | 'indexing'
@@ -70,7 +70,7 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
     setState('uploading')
     setUploadProgress(0)
 
-    // Simulate upload progress
+    // Simulate upload connection speed indicator
     const uploadInterval = setInterval(() => {
       setUploadProgress((prev) => {
         if (prev >= 100) {
@@ -81,7 +81,7 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
       })
     }, 100)
 
-    // After 1.5 seconds, transition to processing and perform real upload
+    // Clear network simulation, hit real API target and manage state engine
     setTimeout(async () => {
       clearInterval(uploadInterval)
       setUploadProgress(100)
@@ -92,9 +92,10 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
       let attempts = 0
       let found = null
 
+      // Status polling loop linked cleanly via getDocuments API file parameters
       while (attempts < 60) {
-        // Polling utilizing modular environment variables bound to getDocuments
         const documents = await getDocuments()
+
         found = Array.isArray(documents)
           ? documents.find((doc: any) => doc?.id === result?.id)
           : null
@@ -106,7 +107,7 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
         attempts++
         await new Promise((resolve) => setTimeout(resolve, 2000))
       }
-    
+
       if (!found || found.status === 'failed') {
         setState('idle')
         setCurrentFile(null)
@@ -116,6 +117,7 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
         return
       }
 
+      // Structure data map cleanly matching mock collection schema specifications
       const mappedDoc = {
         id: found.id,
         filename: found.filename,
@@ -130,14 +132,22 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
 
       setLastUploadedDocId(found.id)
       setState('success')
-      onUpload?.(file, mappedDoc)
 
+      // Give users a 1-second delay to process visual notification before injecting cards
+      setTimeout(() => {
+        onUpload?.(file, mappedDoc)
+      }, 1000)
+
+      // Automatic view state resolution loop reset
       setTimeout(() => {
         setState('idle')
         setCurrentFile(null)
         setUploadProgress(0)
-        if (fileInputRef.current) fileInputRef.current.value = ''
-      }, 2000)
+        setLastUploadedDocId('')
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+      }, 5000)
     }, 1500)
   }
 
@@ -154,7 +164,7 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        'group relative flex flex-col items-center justify-center gap-5 rounded-2xl border border-border/50 bg-linear-to-br from-background to-card/50 px-8 py-16 shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:from-background hover:to-primary/5',
+        'group relative flex flex-col items-center justify-center gap-5 rounded-2xl border border-border/50 bg-linear-to-br from-background to-card/50 px-8 py-16 shadow-sm transition-all hover:border-border hover:shadow-md hover:from-background hover:to-primary/5',
         state !== 'idle' && 'hover:border-border/50 hover:shadow-sm hover:from-background hover:to-card/50',
         className
       )}
@@ -187,10 +197,8 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
 
       {state === 'uploading' && currentFile && (
         <div className="w-full max-w-md space-y-4">
-          <div className="flex justify-center">
-            <div className="rounded-full bg-linear-to-br from-primary/15 to-primary/5 p-4 animate-pulse">
-              <Upload className="h-7 w-7 text-primary" />
-            </div>
+          <div className="rounded-full bg-linear-to-br from-primary/15 to-primary/5 p-4 transition-all">
+            <Upload className="h-7 w-7 text-primary" />
           </div>
 
           <div className="text-center space-y-2">
