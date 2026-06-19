@@ -74,11 +74,13 @@ export default function DashboardPage() {
     <div className="space-y-8 px-4 py-8 md:px-6 lg:px-8">
       {/* Page header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">Document Management</h1>
+        <h1 className="text-3xl font-bold text-foreground">DocuMind AI</h1>
         <p className="text-muted-foreground">
-          Upload and organize your documents for AI-powered analysis and Q&A
+        DocuMind AI turns your documents into a searchable knowledge base. Upload and organize your documents for AI-powered analysis and Q&A
         </p>
       </div>
+
+
 
       {/* Stats cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">

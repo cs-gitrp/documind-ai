@@ -13,6 +13,7 @@ import {
   MessageSquare,
   MessageCircle,
   X,
+  ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,6 +36,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
   const [showAbout, setShowAbout] = useState(false)
+  const [showRepoModal, setShowRepoModal] = useState(false)
   const router = useRouter()
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -276,7 +278,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               <DropdownMenuItem onClick={() => setShowAbout(true)} className="cursor-pointer gap-2">
                 <span>About DocuMind</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer gap-2">
+              <DropdownMenuItem onClick={() => setShowRepoModal(true)} className="cursor-pointer gap-2">
                 <span>View GitHub Repository</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -417,6 +419,48 @@ export function Header({ onMenuClick }: HeaderProps) {
                 An end-to-end document intelligence platform combining semantic 
                 retrieval, conversational interfaces, and explainable AI in one product.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+      {showRepoModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setShowRepoModal(false)}
+        >
+          <div 
+            className="max-w-md w-full rounded-lg border border-border bg-card p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-foreground">Source Code</h3>
+              <button onClick={() => setShowRepoModal(false)} aria-label="Close">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => window.open('https://github.com/cs-gitrp/documind-ai', '_blank')}
+                className="w-full flex items-center justify-between rounded-md border border-border bg-muted px-4 py-3 text-left hover:border-primary hover:bg-accent transition-colors"
+              >
+                <div>
+                  <p className="text-sm font-medium text-foreground">Frontend</p>
+                  <p className="text-xs text-muted-foreground">Next.js + TypeScript</p>
+                </div>
+                <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+              </button>
+
+              <button
+                onClick={() => window.open('https://github.com/cs-gitrp/documind-backend', '_blank')}
+                className="w-full flex items-center justify-between rounded-md border border-border bg-muted px-4 py-3 text-left hover:border-primary hover:bg-accent transition-colors"
+              >
+                <div>
+                  <p className="text-sm font-medium text-foreground">Backend</p>
+                  <p className="text-xs text-muted-foreground">FastAPI + FAISS + Groq</p>
+                </div>
+                <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+              </button>
             </div>
           </div>
         </div>
