@@ -147,7 +147,7 @@ export function DocumentUploadZone({ onUpload, className }: UploadZoneProps) {
         if (fileInputRef.current) {
           fileInputRef.current.value = ''
         }
-      }, 5000)
+      }, 2000)
     }, 1500)
   }
 
